@@ -1,0 +1,59 @@
+#include <SPI.h>
+#include <LoRa.h>
+
+// Pin definitions
+#define NSS 5   // Chip select
+#define RST 14  // Reset
+#define DIO0 2  // Interrupt
+#define LORA_FREQUENCY 433E6 // Define frequency as a macro
+
+unsigned long lastReceiveTime = 0; // Time of last packet
+int packetCount = 0;              // Received packet counter
+const unsigned long timeout = 5000; // 5-second timeout
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial); // Wait for Serial to initialize
+
+  // Set LoRa pins
+  LoRa.setPins(NSS, RST, DIO0);
+
+  // Initialize LoRa at defined frequency
+  if (!LoRa.begin(LORA_FREQUENCY)) {
+    Serial.println("LoRa initialization failed!");
+    while (1); // Halt if failed
+  }
+  Serial.println("Receiver ready");
+}
+
+void processPacket(int packetSize) {
+  char incoming[packetSize + 1];
+  int index = 0;
+  while (LoRa.available() && index < packetSize) {
+    incoming[index++] = (char)LoRa.read();
+  }
+  incoming[index] = '\0';
+
+  int rssi = LoRa.packetRssi();
+  packetCount++;
+  lastReceiveTime = millis();
+
+  Serial.print("Received packet '");
+  Serial.print(incoming);
+  Serial.print("' with RSSI ");
+  Serial.print(rssi);
+  Serial.print(", count: ");
+  Serial.println(packetCount);
+}
+
+void loop() {
+  int packetSize = LoRa.parsePacket();
+  if (packetSize) {
+    processPacket(packetSize);
+  }
+
+  if (millis() - lastReceiveTime > timeout && packetCount > 0) {
+    Serial.println("Transmitter out of range");
+    packetCount = 0;
+  }
+}
