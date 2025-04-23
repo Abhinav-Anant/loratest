@@ -1,0 +1,51 @@
+#include <Arduino.h>
+
+// Define the pins for the ultrasonic sensor
+#define TRIG_PIN 5   // GPIO 5 is connected to the TRIG pin
+#define ECHO_PIN 18  // GPIO 18 is connected to the ECHO pin
+#define SPEED_OF_SOUND 0.0343 // Speed of sound in cm/µs
+
+void setup() {
+  // Start serial communication at 115200 baud rate
+  Serial.begin(115200);
+  
+  // Set pin modes
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+  
+  // Print a message indicating the system is ready
+  Serial.println("Ultrasonic Sensor Initialized");
+}
+
+void loop() {
+  // Send a trigger pulse
+  digitalWrite(TRIG_PIN, LOW);    // Ensure trigger is low first
+  delayMicroseconds(2);           // Short delay for stability
+  digitalWrite(TRIG_PIN, HIGH);   // Send a 10µs pulse
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+  
+  // Measure the duration of the echo pulse (in microseconds)
+  long duration = pulseIn(ECHO_PIN, HIGH, 30000); // Timeout after 30ms
+  
+  // Check if an echo was received
+  if (duration == 0) {
+    Serial.println("No echo received - Check sensor wiring or object out of range");
+  } else {
+    // Calculate distance in centimeters
+    float distance = (duration / 2.0) * SPEED_OF_SOUND;
+    
+    // Optionally convert to meters
+    float distanceMeters = distance / 100.0;
+    
+    // Print the distance in both units
+    Serial.print("Distance: ");
+    Serial.print(distance);
+    Serial.print(" cm (");
+    Serial.print(distanceMeters);
+    Serial.println(" m)");
+  }
+  
+  // Wait 100 milliseconds before the next reading
+  delay(100);
+}
